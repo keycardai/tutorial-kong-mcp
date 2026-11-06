@@ -1,0 +1,57 @@
+# Kong AI Gateway config: the orders MCP server behind Kong, with Keycard as
+# the authorization server. Apply it with:
+#
+#   kongctl apply -f kong/kong.yaml --auto-approve
+#
+# Environment:
+#   AI_GATEWAY_ID     the AI Gateway's ID, printed by scripts/kong-dataplane.sh
+#   KEYCARD_ZONE_URL  your Keycard Zone, https://<zone-id>.keycard.cloud
+#   KEYCARD_JWKS_URL  the Zone's signing keys, $KEYCARD_ZONE_URL/openidconnect/jwks
+#   MCP_RESOURCE      the URL clients connect to, http://localhost:8000/orders/mcp
+#   ORDERS_MCP_URL    where Kong reaches the MCP server, http://host.docker.internal:8090/mcp
+_defaults:
+  kongctl:
+    namespace: kong-keycard-tutorial
+
+ai_gateway_auth_strategies:
+  - ref: keycard
+    ai_gateway: !lookup {id: !env AI_GATEWAY_ID}
+    name: keycard
+    display_name: Keycard Zone
+    type: openid-connect
+    config:
+      # Kong accepts only tokens your Zone signed, checked against its keys.
+      issuer: !env KEYCARD_ZONE_URL
+      jwks_endpoint: !env KEYCARD_JWKS_URL
+      auth_methods:
+        - bearer
+      # The token's aud has to be this MCP endpoint, the Resource in Keycard.
+      audience_required:
+        - !env MCP_RESOURCE
+      ssl_verify: true
+      hide_credentials: true
+      cache_tokens_salt: kong-keycard-tutorial
+
+ai_gateway_mcp_servers:
+  - ref: orders-mcp
+    ai_gateway: !lookup {id: !env AI_GATEWAY_ID}
+    name: orders-mcp
+    display_name: Orders MCP
+    type: passthrough-listener
+    access:
+      acl_attribute_type: consumer
+      auth_strategies:
+        - keycard
+      # Protected resource metadata: tells an MCP client to sign in with Keycard.
+      metadata:
+        resource: !env MCP_RESOURCE
+        endpoint: /.well-known/oauth-protected-resource/orders/mcp
+        authorization_servers:
+          - !env KEYCARD_ZONE_URL
+        scopes_supported:
+          - mcp:tools
+    config:
+      url: !env ORDERS_MCP_URL
+      route:
+        paths:
+          - /orders/mcp
