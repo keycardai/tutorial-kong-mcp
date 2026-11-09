@@ -3,16 +3,22 @@
 # can issue tokens for it.
 #
 # Needs a Keycard service account credential (KEYCARD_CLIENT_ID and
-# KEYCARD_CLIENT_SECRET) and KEYCARD_ZONE_ID. MCP_RESOURCE defaults to
+# KEYCARD_CLIENT_SECRET) and KEYCARD_ISSUER. MCP_RESOURCE defaults to
 # http://localhost:8000/orders/mcp and must match kong/kong.yaml.
 set -euo pipefail
 
 : "${KEYCARD_CLIENT_ID:?Set KEYCARD_CLIENT_ID to a service account client ID}"
 : "${KEYCARD_CLIENT_SECRET:?Set KEYCARD_CLIENT_SECRET to its secret}"
-: "${KEYCARD_ZONE_ID:?Set KEYCARD_ZONE_ID to your Zone ID}"
+: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to your Zone URL, https://<zone-id>.keycard.cloud}"
 mcp_resource="${MCP_RESOURCE:-http://localhost:8000/orders/mcp}"
 api="https://api.keycard.ai"
-zone="$KEYCARD_ZONE_ID"
+# The Zone ID is the first label of the issuer's host.
+if [[ "$KEYCARD_ISSUER" =~ ^https://([^./]+)\.keycard\.cloud/?$ ]]; then
+  zone="${BASH_REMATCH[1]}"
+else
+  echo "KEYCARD_ISSUER must be your Zone URL, https://<zone-id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
+  exit 1
+fi
 
 # Trade the service account credential for a Management API token. Secrets go
 # to curl on stdin so they never appear in the process list.
@@ -47,6 +53,5 @@ fi
 
 echo
 echo "Set these for kong/kong.yaml:"
-echo "export KEYCARD_ZONE_URL=https://$zone.keycard.cloud"
 echo "export KEYCARD_JWKS_URL=https://$zone.keycard.cloud/openidconnect/jwks"
 echo "export MCP_RESOURCE=$mcp_resource"

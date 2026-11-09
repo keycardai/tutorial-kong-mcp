@@ -6,9 +6,9 @@
 #
 # Environment:
 #   AI_GATEWAY_ID       the AI Gateway's ID, printed by scripts/kong-dataplane.sh
-#   KEYCARD_ZONE_URL    your Keycard Zone, https://<zone-id>.keycard.cloud
-#   KEYCARD_JWKS_URL    the Zone's signing keys, $KEYCARD_ZONE_URL/openidconnect/jwks
-#   KEYCARD_TOKEN_URL   where Kong exchanges tokens, $KEYCARD_ZONE_URL/oauth/2/token
+#   KEYCARD_ISSUER      your Keycard Zone, https://<zone-id>.keycard.cloud
+#   KEYCARD_JWKS_URL    the Zone's signing keys, $KEYCARD_ISSUER/openidconnect/jwks
+#   KEYCARD_TOKEN_URL   where Kong exchanges tokens, $KEYCARD_ISSUER/oauth/2/token
 #   KONG_KEYCARD_BASIC  "Basic " + base64 of Kong's client ID and secret, joined by ":"
 #   MCP_RESOURCE        the URL clients connect to, http://localhost:8000/orders/mcp
 #   ORDERS_MCP_URL      where Kong reaches the MCP server, http://host.docker.internal:8090/mcp
@@ -24,7 +24,7 @@ ai_gateway_auth_strategies:
     type: openid-connect
     config:
       # Kong accepts only tokens your Zone signed, checked against its keys.
-      issuer: !env KEYCARD_ZONE_URL
+      issuer: !env KEYCARD_ISSUER
       jwks_endpoint: !env KEYCARD_JWKS_URL
       auth_methods:
         - bearer
@@ -134,7 +134,7 @@ ai_gateway_mcp_servers:
         resource: !env MCP_RESOURCE
         endpoint: /.well-known/oauth-protected-resource/orders/mcp
         authorization_servers:
-          - !env KEYCARD_ZONE_URL
+          - !env KEYCARD_ISSUER
         scopes_supported:
           - mcp:tools
     config:
