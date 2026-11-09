@@ -6,3 +6,4 @@ certs/
 __pycache__/
 *.pyc
 gateway-client-secret.txt
+exchange-log.jsonl
