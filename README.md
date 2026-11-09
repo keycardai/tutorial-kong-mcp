@@ -90,7 +90,7 @@ sequenceDiagram
    export KONG_KEYCARD_BASIC="Basic $(printf '%s:%s' "$KONG_KEYCARD_CLIENT_ID" "$KONG_KEYCARD_CLIENT_SECRET" | base64 | tr -d '\n')"
    export ORDERS_MCP_URL=http://host.docker.internal:8090/mcp
    export KONGCTL_DEFAULT_KONNECT_PAT="$KONNECT_TOKEN"
-   kongctl adopt ai-gateway kong-keycard-tutorial --namespace kong-keycard-tutorial
+   kongctl adopt ai-gateway "${AI_GATEWAY_NAME:-kong-keycard-tutorial}" --namespace kong-keycard-tutorial
    kongctl apply -f kong/kong.yaml --auto-approve
    ```
 
@@ -131,6 +131,8 @@ sequenceDiagram
 
    Run `/mcp`, select **orders**, then **Authenticate**. Claude Code reads Kong's metadata, registers with your Zone, and opens the Zone's sign-in page. Sign in, then ask Claude to list the orders.
 
+   If Claude Code has connected to this URL before with a different Zone, choose **Clear authentication** before **Authenticate**. Otherwise it can keep using tokens from the old Zone, and Kong rejects them.
+
    Your Zone's default policies allow every tool, so Claude lists three orders. The MCP server's terminal shows `accepted a token for sub=<your user ID> from the gateway` for each request Kong forwarded.
 
    In Keycard Console, the Zone's **Audit Log** shows your sign-in and a `credentials:issue` with the `authorization_code` grant, issued to you through the client Claude Code registered. After that comes one `credentials:issue` with the token exchange grant for each MCP request, issued to you through Kong's Application.
@@ -149,7 +151,7 @@ sequenceDiagram
 
    The version number can differ. Ask Claude to list the orders again: listing still works, and A-1002 is still `pending`, because the refund never reached the MCP server. The Audit Log shows that exchange as a `credentials:issue` failure with the same reason.
 
-   To give refunds back, activate `default-zone-policies` again in Console.
+   To give refunds back, activate `default-zone-policies` again in Console. To take them away again, activate `kong-tutorial` in Console. Running `block-refunds.sh` a second time doesn't do it.
 
 8. **Optional: watch the exchanges.**
 
@@ -181,7 +183,7 @@ The exchanged token doesn't say which tool it was issued for. So the orders serv
 ## Clean up
 
 ```bash
-docker rm -f kong-keycard-tutorial-gateway
+docker rm -f "${AI_GATEWAY_NAME:-kong-keycard-tutorial}-gateway"
 rm kong-gateway.env
 ```
 
@@ -189,4 +191,4 @@ Delete the AI Gateway in Konnect. In Keycard Console, activate `default-zone-pol
 
 ## Tested with
 
-Kong AI Gateway 2.3.0 data plane (`kong/kong-ai-gateway:latest` on 2026-11-06), kongctl 1.26.0, FastMCP 4.1.6, and Claude Code 2.1.319, against a new Keycard Zone on 2026-11-06.
+Kong AI Gateway 2.3.0 data plane (`kong/kong-ai-gateway:latest` on 2026-11-06), kongctl 1.26.0, FastMCP 4.1.6, and Claude Code 2.1.319, against a new Keycard organization on 2026-11-09.
