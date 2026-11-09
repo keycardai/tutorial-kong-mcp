@@ -61,7 +61,7 @@ EOF
 existing=$(kc GET "/zones/$zone/policies" |
   json "next((p['id'] for p in d.get('items',[]) if p.get('name')=='orders-no-refunds'), '')")
 if [[ -n "$existing" ]]; then
-  echo "The orders-no-refunds policy already exists: $existing"
+  echo "The orders-no-refunds policy already exists: $existing. If refunds are allowed again, activate $set_name in Console."
   exit 0
 fi
 
