@@ -65,7 +65,7 @@ sequenceDiagram
    ```bash
    export KEYCARD_CLIENT_ID=<service-account-client-id>
    export KEYCARD_CLIENT_SECRET=<service-account-client-secret>
-   export KEYCARD_ZONE_ID=<zone-id>
+   export KEYCARD_ISSUER=https://<zone-id>.keycard.cloud
    ./keycard/setup.sh
    ./keycard/setup-exchange.sh
    ```
@@ -75,7 +75,7 @@ sequenceDiagram
 3. **Start the MCP server.** In a new terminal, from the repository root:
 
    ```bash
-   export KEYCARD_ZONE_URL=https://<zone-id>.keycard.cloud
+   export KEYCARD_ISSUER=https://<zone-id>.keycard.cloud
    export GATEWAY_CLIENT_ID=$(sed -n 's/^KONG_KEYCARD_CLIENT_ID=//p' kong-gateway.env)
    cd orders-mcp
    uv run orders-mcp
@@ -133,7 +133,7 @@ sequenceDiagram
 
    If Claude Code has connected to this URL before with a different Zone, choose **Clear authentication** before **Authenticate**. Otherwise it can keep using tokens from the old Zone, and Kong rejects them.
 
-   Your Zone's default policies allow every tool, so Claude lists three orders. The MCP server's terminal shows `accepted a token for sub=<your user ID> from the gateway` for each request Kong forwarded.
+   Your Zone's default policies allow every tool, so Claude lists three orders. The MCP server's terminal shows `accepted a token for sub=<user-id> from the gateway` for each request Kong forwarded.
 
    In Keycard Console, the Zone's **Audit Log** shows your sign-in and a `credentials:issue` with the `authorization_code` grant, issued to you through the client Claude Code registered. After that comes one `credentials:issue` with the token exchange grant for each MCP request, issued to you through Kong's Application.
 
@@ -151,7 +151,7 @@ sequenceDiagram
 
    The version number can differ. Ask Claude to list the orders again: listing still works, and A-1002 is still `pending`, because the refund never reached the MCP server. The Audit Log shows that exchange as a `credentials:issue` failure with the same reason.
 
-   To give refunds back, activate `default-zone-policies` again in Console. To take them away again, activate `kong-tutorial` in Console. Running `block-refunds.sh` a second time doesn't do it.
+   To give refunds back, activate `default-zone-policies` again in Console. To take them away again, activate `kong-tutorial` in Console. Running `block-refunds.sh` a second time doesn't do it, because the script stops when the `orders-no-refunds` policy already exists.
 
 8. **Optional: watch the exchanges.**
 
@@ -172,7 +172,7 @@ Sign-in, in the `keycard` AI Auth Strategy and the MCP server:
 
 The exchange, in the `keycard-exchange` Request Callout:
 
-- `request.by_lua` reads the JSON-RPC message and builds the token exchange. For `tools/call` it names the tool. For `tools/list`, `prompts/list`, `resources/list`, and `resources/templates/list` it names the method. Everything else, such as `initialize` or a notification, goes as `initialize`, so a policy can tell apart tool calls and those list methods but not other methods. A batch, or a `tools/call` without a valid tool name, gets `400` before Kong asks the Zone.
+- `request.by_lua` reads the JSON-RPC message and builds the token exchange. For `tools/call` it names the tool. For `tools/list`, `prompts/list`, `resources/list`, and `resources/templates/list` it names the method. Everything else, such as `initialize` or a notification, goes as `initialize`, so a policy can decide each tool call and each of those list methods on its own, but not other methods. A batch, or a `tools/call` without a valid tool name, gets `400` before Kong asks the Zone.
 - `server` at the top of that Lua is the orders server's Resource identifier. It's set in the Lua rather than from the environment, so change it there if yours is different.
 - The callout sends Kong's client ID and secret in its `Authorization` header. Only the Application that provides a Resource can exchange tokens issued for it, which is why `setup-exchange.sh` makes Kong's Application the provider of Kong's endpoint.
 - `cache.bypass: true` sends every request to the Zone, so each call gets its own decision.

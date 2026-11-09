@@ -11,11 +11,17 @@ set -euo pipefail
 
 : "${KEYCARD_CLIENT_ID:?Set KEYCARD_CLIENT_ID to a service account client ID}"
 : "${KEYCARD_CLIENT_SECRET:?Set KEYCARD_CLIENT_SECRET to its secret}"
-: "${KEYCARD_ZONE_ID:?Set KEYCARD_ZONE_ID to your Zone ID}"
+: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to your Zone URL, https://<zone-id>.keycard.cloud}"
 orders_resource="${ORDERS_RESOURCE:-http://localhost:8090/mcp}"
 set_name="${POLICY_SET_NAME:-kong-tutorial}"
 api="https://api.keycard.ai"
-zone="$KEYCARD_ZONE_ID"
+# The Zone ID is the first label of the issuer's host.
+if [[ "$KEYCARD_ISSUER" =~ ^https://([^./]+)\.keycard\.cloud/?$ ]]; then
+  zone="${BASH_REMATCH[1]}"
+else
+  echo "KEYCARD_ISSUER must be your Zone URL, https://<zone-id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
+  exit 1
+fi
 
 token=$(printf 'user = "%s:%s"\n' "$KEYCARD_CLIENT_ID" "$KEYCARD_CLIENT_SECRET" |
   curl -s --fail-with-body -K - -X POST "$api/service-account-token" -d grant_type=client_credentials |
