@@ -1,13 +1,13 @@
 # Kong AI Gateway config: the orders MCP server behind Kong, with Keycard as
-# the authorization server and the Zone's policy deciding each MCP call.
+# the authorization server and Keycard's policy deciding each MCP call.
 # Apply it with:
 #
 #   kongctl apply -f kong/kong.yaml --auto-approve
 #
 # Environment:
 #   AI_GATEWAY_ID       the AI Gateway's ID, printed by scripts/kong-dataplane.sh
-#   KEYCARD_ISSUER      your Keycard Zone, https://<zone-id>.keycard.cloud
-#   KEYCARD_JWKS_URL    the Zone's signing keys, $KEYCARD_ISSUER/openidconnect/jwks
+#   KEYCARD_ISSUER      the Keycard issuer URL, https://<id>.keycard.cloud
+#   KEYCARD_JWKS_URL    Keycard's signing keys, $KEYCARD_ISSUER/openidconnect/jwks
 #   KEYCARD_TOKEN_URL   where Kong exchanges tokens, $KEYCARD_ISSUER/oauth/2/token
 #   KONG_KEYCARD_BASIC  "Basic " + base64 of Kong's client ID and secret, joined by ":"
 #   MCP_RESOURCE        the URL clients connect to, http://localhost:8000/orders/mcp
@@ -20,10 +20,10 @@ ai_gateway_auth_strategies:
   - ref: keycard
     ai_gateway: !lookup {id: !env AI_GATEWAY_ID}
     name: keycard
-    display_name: Keycard Zone
+    display_name: Keycard
     type: openid-connect
     config:
-      # Kong accepts only tokens your Zone signed, checked against its keys.
+      # Kong accepts only tokens Keycard signed, checked against its keys.
       issuer: !env KEYCARD_ISSUER
       jwks_endpoint: !env KEYCARD_JWKS_URL
       auth_methods:
@@ -33,7 +33,7 @@ ai_gateway_auth_strategies:
         - !env MCP_RESOURCE
       ssl_verify: true
       # Keep the caller's token on the request: the exchange below sends it to
-      # the Zone and then replaces it, so it never reaches the MCP server.
+      # Keycard and then replaces it, so it never reaches the MCP server.
       hide_credentials: false
       cache_tokens_salt: kong-keycard-tutorial
 
@@ -54,7 +54,7 @@ ai_gateway_policies:
                 Content-Type: application/x-www-form-urlencoded
                 Authorization: !env KONG_KEYCARD_BASIC
             # Builds an RFC 8693 token exchange that names the MCP method or
-            # tool as an RFC 9396 authorization detail, so the Zone's policy
+            # tool as an RFC 9396 authorization detail, so Keycard's policy
             # decides this call. "locations" and "resource" are the orders
             # server's Resource identifier in Keycard.
             by_lua: |
@@ -65,7 +65,7 @@ ai_gateway_policies:
               local action, tool = "initialize", nil
               local rpc = kong.request.get_body()
               -- A batch could hide a tool call, so refuse it rather than
-              -- asking the Zone about the wrong thing.
+              -- asking Keycard about the wrong thing.
               if type(rpc) == "table" and rpc[1] ~= nil then
                 return kong.response.exit(400, {
                   error = "invalid_request",
@@ -105,8 +105,8 @@ ai_gateway_policies:
           cache:
             bypass: true
       upstream:
-        # Swap the caller's token for the one the Zone issued, or stop here
-        # with the Zone's reason if it refused.
+        # Swap the caller's token for the one Keycard issued, or stop here
+        # with Keycard's reason if it refused.
         by_lua: |
           local res = kong.ctx.shared.callouts.keycard.response
           local body = type(res.body) == "table" and res.body or {}

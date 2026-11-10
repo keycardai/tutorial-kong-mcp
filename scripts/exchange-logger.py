@@ -1,11 +1,11 @@
 """A pass-through that logs each token exchange Kong sends, then forwards it.
 
 Point the Request Callout's URL at http://host.docker.internal:8099/oauth/2/token
-to see exactly what Kong asks your Zone for on every MCP call, and what the
-Zone answers. Tokens and secrets are never logged: they show as a short
+to see exactly what Kong asks Keycard for on every MCP call, and what
+Keycard answers. Tokens and secrets are never logged: they show as a short
 fingerprint, so you can tell two apart without seeing either.
 
-    KEYCARD_TOKEN_URL=https://<zone-id>.keycard.cloud/oauth/2/token python3 scripts/exchange-logger.py
+    KEYCARD_TOKEN_URL=https://<id>.keycard.cloud/oauth/2/token python3 scripts/exchange-logger.py
 """
 
 import base64
@@ -56,7 +56,7 @@ class Handler(BaseHTTPRequestHandler):
 
         status, body = 502, b'{"error":"server_error","error_description":"KEYCARD_TOKEN_URL is not set"}'
         if UPSTREAM:
-            # The Zone sits behind Cloudflare, which refuses Python's default
+            # Keycard sits behind Cloudflare, which refuses Python's default
             # User-Agent with a plain-text "error code: 1010", so name the client.
             req = urllib.request.Request(UPSTREAM, data=raw, method="POST", headers={
                 "Content-Type": self.headers.get("Content-Type", "application/x-www-form-urlencoded"),
@@ -99,6 +99,6 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     if not UPSTREAM:
-        print("Set KEYCARD_TOKEN_URL to your Zone's token endpoint.", file=sys.stderr)
+        print("Set KEYCARD_TOKEN_URL to Keycard's token endpoint.", file=sys.stderr)
     print(f"Logging token exchanges on :{PORT}, forwarding to {UPSTREAM or '(nowhere)'}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

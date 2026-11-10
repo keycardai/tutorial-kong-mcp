@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Registers Kong's MCP endpoint as a Resource in your Keycard Zone, so the Zone
+# Registers Kong's MCP endpoint as a Resource in Keycard, so Keycard
 # can issue tokens for it.
 #
 # Needs a Keycard service account credential (KEYCARD_CLIENT_ID and
@@ -9,14 +9,14 @@ set -euo pipefail
 
 : "${KEYCARD_CLIENT_ID:?Set KEYCARD_CLIENT_ID to a service account client ID}"
 : "${KEYCARD_CLIENT_SECRET:?Set KEYCARD_CLIENT_SECRET to its secret}"
-: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to your Zone URL, https://<zone-id>.keycard.cloud}"
+: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to the Keycard issuer URL, https://<id>.keycard.cloud}"
 mcp_resource="${MCP_RESOURCE:-http://localhost:8000/orders/mcp}"
 api="https://api.keycard.ai"
-# The Zone ID is the first label of the issuer's host.
+# The issuer ID is the first label of the issuer's host.
 if [[ "$KEYCARD_ISSUER" =~ ^https://([^./]+)\.keycard\.cloud/?$ ]]; then
   zone="${BASH_REMATCH[1]}"
 else
-  echo "KEYCARD_ISSUER must be your Zone URL, https://<zone-id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
+  echo "KEYCARD_ISSUER must be the Keycard issuer URL, https://<id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
   exit 1
 fi
 
