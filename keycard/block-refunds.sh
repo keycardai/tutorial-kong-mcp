@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Takes refund_order away from everyone in your Zone, so Kong's exchange for it
+# Takes refund_order away from everyone in your Keycard organization, so Kong's exchange for it
 # is refused while list_orders keeps working.
 #
-# A new Zone runs the managed default-zone-policies set, which permits every
+# A new Keycard organization runs the managed default-zone-policies set, which permits every
 # tool. This copies that set as "kong-tutorial", adds one forbid to the copy,
 # and activates it. To undo, activate default-zone-policies again in Console.
 #
@@ -11,15 +11,15 @@ set -euo pipefail
 
 : "${KEYCARD_CLIENT_ID:?Set KEYCARD_CLIENT_ID to a service account client ID}"
 : "${KEYCARD_CLIENT_SECRET:?Set KEYCARD_CLIENT_SECRET to its secret}"
-: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to your Zone URL, https://<zone-id>.keycard.cloud}"
+: "${KEYCARD_ISSUER:?Set KEYCARD_ISSUER to the Keycard issuer URL, https://<id>.keycard.cloud}"
 orders_resource="${ORDERS_RESOURCE:-http://localhost:8090/mcp}"
 set_name="${POLICY_SET_NAME:-kong-tutorial}"
 api="https://api.keycard.ai"
-# The Zone ID is the first label of the issuer's host.
+# The issuer ID is the first label of the issuer's host.
 if [[ "$KEYCARD_ISSUER" =~ ^https://([^./]+)\.keycard\.cloud/?$ ]]; then
   zone="${BASH_REMATCH[1]}"
 else
-  echo "KEYCARD_ISSUER must be your Zone URL, https://<zone-id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
+  echo "KEYCARD_ISSUER must be the Keycard issuer URL, https://<id>.keycard.cloud, not $KEYCARD_ISSUER" >&2
   exit 1
 fi
 
@@ -44,7 +44,7 @@ set_id() {
 copy_id=$(set_id "$set_name")
 if [[ -z "$copy_id" ]]; then
   default_id=$(set_id default-zone-policies)
-  [[ -n "$default_id" ]] || { echo "No default-zone-policies set in this Zone" >&2; exit 1; }
+  [[ -n "$default_id" ]] || { echo "No default-zone-policies set in Keycard" >&2; exit 1; }
   copy_id=$(kc POST "/zones/$zone/policy-sets/$default_id/clones" \
     -d "{\"name\": \"$set_name\", \"copy_policies\": \"none\"}" | json 'd["policy_set"]["id"]')
   echo "Copied default-zone-policies as $set_name: $copy_id"

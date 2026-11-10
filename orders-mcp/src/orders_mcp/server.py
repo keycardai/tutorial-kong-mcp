@@ -4,7 +4,7 @@ It has one tool that reads and one that writes, so an access policy can allow
 one and refuse the other. The orders live in memory and reset on restart.
 
 With KEYCARD_ISSUER and GATEWAY_CLIENT_ID set, the server accepts only
-tokens your Zone issued to Kong for this server, which is what Kong sends after
+tokens Keycard issued to Kong for this server, which is what Kong sends after
 it exchanges the caller's token. Without them, it accepts any request, which
 is fine while Kong only checks sign-in.
 """
@@ -26,11 +26,11 @@ SERVER_RESOURCE = os.environ.get("ORDERS_RESOURCE", "http://localhost:8090/mcp")
 
 
 class GatewayTokenVerifier(JWTVerifier):
-    """Accepts a Zone token for this server only if Kong is the client it was issued to.
+    """Accepts a Keycard token for this server only if Kong is the client it was issued to.
 
     A token from the exchange doesn't say which tool it was issued for. Without
     the client check, a caller who got a token for this server some other way
-    could call any tool and skip the per-tool decision Kong asked the Zone for.
+    could call any tool and skip the per-tool decision Kong asked Keycard for.
     """
 
     async def verify_token(self, token: str) -> AccessToken | None:
