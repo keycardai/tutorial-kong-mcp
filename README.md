@@ -192,3 +192,9 @@ Delete the AI Gateway in Konnect. In Keycard Console, activate `default-zone-pol
 ## Tested with
 
 Kong AI Gateway 2.3.0 data plane (`kong/kong-ai-gateway:latest` on 2026-11-06), kongctl 1.26.0, FastMCP 4.1.6, and Claude Code 2.1.319, against a new Keycard organization on 2026-11-09.
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE) and, for the copyright notice,
+[NOTICE](NOTICE). The Keycard name and logo are trademarks;
+[TRADEMARKS.md](TRADEMARKS.md) states how they may be used.
